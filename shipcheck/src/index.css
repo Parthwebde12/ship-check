@@ -9,3 +9,15 @@ h1 {
   font-size: 16px;
   margin: 0 0 8px;
 }
+.summary { font-weight: 600; font-size: 14px; margin: 4px 0 0; }
+.error { color: #b00020; font-size: 13px; }
+
+.checks { list-style: none; padding: 0; margin: 8px 0 0; }
+.checks li {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+.checks small { display: block; color: #666; word-break: break-all; }
