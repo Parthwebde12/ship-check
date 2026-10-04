@@ -1,24 +1,48 @@
 const API = 'https://api.github.com'
 
-async function gh(path) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { Accept: 'application/vnd.github+json' },
-  })
+async function gh(path, token) {
+  const headers = { Accept: 'application/vnd.github+json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(`${API}${path}`, { headers })
+  if (res.status === 401)
+    throw new Error('GitHub token is invalid. Update or clear it in Settings.')
   if (res.status === 404) throw new Error('Repo not found, empty, or private.')
   if (res.status === 403 || res.status === 429)
-    throw new Error('GitHub rate limit reached. Try again in a few minutes.')
+    throw new Error(
+      token
+        ? 'GitHub rate limit or permission problem. Try again later.'
+        : 'GitHub rate limit reached. Add a token in Settings or try later.'
+    )
   if (!res.ok) throw new Error(`GitHub API error: ${res.status}`)
   return res.json()
 }
 
-export async function fetchRepoFiles(owner, repo) {
-  const info = await gh(`/repos/${owner}/${repo}`)
-  const branch = encodeURIComponent(info.default_branch)
-  const tree = await gh(`/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`)
+export async function fetchRepoFiles(owner, repo, token) {
+  const info = await gh(`/repos/${owner}/${repo}`, token)
+  const branch = info.default_branch
+  const tree = await gh(
+    `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
+    token
+  )
 
-  const paths = tree.tree
-    .filter((item) => item.type === 'blob') // files only
-    .map((item) => item.path)
+  const files = tree.tree
+    .filter((item) => item.type === 'blob')
+    .map((item) => ({ path: item.path, size: item.size ?? 0 }))
 
-  return { paths, truncated: tree.truncated }
+  return { files, truncated: tree.truncated, branch }
+}
+
+// Raw file contents. Returns null if the file can't be fetched.
+export async function fetchText(owner, repo, branch, path, token) {
+  const safePath = path.split('/').map(encodeURIComponent).join('/')
+  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURI(branch)}/${safePath}`
+  try {
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `token ${token}` } : {},
+    })
+    return res.ok ? await res.text() : null
+  } catch {
+    return null
+  }
 }

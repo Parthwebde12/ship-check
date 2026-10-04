@@ -62,3 +62,73 @@ export function runChecks(paths) {
 
   return results
 }
+
+export function runContentChecks({
+  gitignoreText,
+  readmeText,
+  hasPackageJson,
+  findings,
+  scannedCount,
+}) {
+  const out = []
+
+  if (gitignoreText != null) {
+    const lines = gitignoreText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'))
+
+    const ignoresEnv = lines.some((l) =>
+      /^\/?(\*\*\/)?\.env(\*|\.\*|\.local)?$/.test(l)
+    )
+    out.push({
+      id: 'gi-env',
+      label: '.gitignore covers .env',
+      status: ignoresEnv ? 'pass' : 'fail',
+      detail: ignoresEnv ? 'Found.' : 'Add ".env" to .gitignore.',
+    })
+
+    if (hasPackageJson) {
+      const ignoresNm = lines.some((l) =>
+        /^\/?(\*\*\/)?node_modules\/?$/.test(l)
+      )
+      out.push({
+        id: 'gi-nm',
+        label: '.gitignore covers node_modules',
+        status: ignoresNm ? 'pass' : 'fail',
+        detail: ignoresNm ? 'Found.' : 'Add "node_modules" to .gitignore.',
+      })
+    }
+  }
+
+  if (readmeText != null) {
+    const hasHeading =
+      /^#{1,6}\s*.*(install|setup|set up|getting started|usage|run|quick ?start)/im.test(readmeText)
+    const hasCommand =
+      /(npm (install|run|start)|yarn|pnpm|pip install|python |docker|go run|cargo run)/i.test(readmeText)
+    const ok = hasHeading || hasCommand
+    out.push({
+      id: 'readme-run',
+      label: 'README has run instructions',
+      status: ok ? 'pass' : 'warn',
+      detail: ok
+        ? 'Setup or run instructions found.'
+        : 'No install/usage section or commands found.',
+    })
+  }
+
+  const n = findings.length
+  out.push({
+    id: 'secrets',
+    label: 'No key-like strings in code',
+    status: n ? 'fail' : 'pass',
+    detail: n
+      ? findings
+          .slice(0, 5)
+          .map((f) => `${f.path}:${f.line} (${f.name})`)
+          .join(', ') + (n > 5 ? ` +${n - 5} more` : '')
+      : `Scanned ${scannedCount} files (max 40). Heuristic only.`,
+  })
+
+  return out
+}
