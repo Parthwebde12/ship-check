@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "shipcheck",
+  "version": "0.1.0",
+  "description": "Checks whether a GitHub repo is ready to ship.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "shipcheck"
+  },
+  "permissions": ["activeTab"],
+  "host_permissions": ["https://api.github.com/*"]
+}
