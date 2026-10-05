@@ -46,3 +46,14 @@ export async function fetchText(owner, repo, branch, path, token) {
     return null
   }
 }
+
+export async function fetchRecentCommits(owner, repo, token, limit = 30) {
+  const list = await gh(`/repos/${owner}/${repo}/commits?per_page=${limit}`, token)
+  return list.map((c) => c.sha)
+}
+
+// Each file has { filename, status, patch? }. patch is missing for binary or huge diffs.
+export async function fetchCommitFiles(owner, repo, sha, token) {
+  const commit = await gh(`/repos/${owner}/${repo}/commits/${sha}`, token)
+  return commit.files || []
+}

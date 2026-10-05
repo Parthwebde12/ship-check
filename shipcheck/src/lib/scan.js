@@ -55,3 +55,24 @@ export function scanText(path, text) {
   })
   return findings
 }
+
+
+// Scans only the REMOVED lines of a commit's diff for one file.
+// Returns findings without the secret text itself.
+export function scanPatch(path, sha, patch) {
+  if (SKIP_DIRS.test(path) || SKIP_FILES.test(path)) return []
+
+  const findings = []
+  for (const line of patch.split('\n')) {
+    if (!line.startsWith('-')) continue
+    const text = line.slice(1)
+    if (text.length > 500 || IGNORE_LINE.test(text)) continue
+    for (const p of PATTERNS) {
+      if (p.re.test(text)) {
+        findings.push({ path, sha: sha.slice(0, 7), name: p.name })
+        break
+      }
+    }
+  }
+  return findings
+}

@@ -132,3 +132,35 @@ export function runContentChecks({
 
   return out
 }
+
+export function runHistoryCheck({ findings = [], scanned = 0, total = 0, skippedReason = null }) {
+  if (skippedReason) {
+    return {
+      id: 'history',
+      label: 'Git history scan',
+      status: 'warn',
+      detail: skippedReason,
+    }
+  }
+
+  if (findings.length) {
+    const list = findings
+      .slice(0, 4)
+      .map((f) => `${f.path} @ ${f.sha} (${f.name})`)
+      .join(', ')
+    const more = findings.length > 4 ? ` +${findings.length - 4} more` : ''
+    return {
+      id: 'history',
+      label: 'No secrets removed from history',
+      status: 'fail',
+      detail: `Key-like lines were deleted in: ${list}${more}. Deleting a key does not make it safe, so revoke or rotate it.`,
+    }
+  }
+
+  return {
+    id: 'history',
+    label: 'No secrets removed from history',
+    status: 'pass',
+    detail: `Scanned ${scanned} of the last ${total} commits. Older history not checked.`,
+  }
+}
