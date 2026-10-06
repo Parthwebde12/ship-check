@@ -4,7 +4,7 @@ const RESERVED = new Set([
 ])
 
 export async function getRepoFromTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  const [tab] = await globalThis.chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab || !tab.url) return null
 
   const url = new URL(tab.url)

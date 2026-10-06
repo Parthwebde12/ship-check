@@ -28,7 +28,7 @@ function score(path) {
 }
 
 // Pick the most likely files to hold secrets: small text files, max `limit`
-export function pickFilesToScan(files, limit = 40) {
+export function pickFilesToScan(files, limit = 100) {
   return files
     .filter(
       (f) =>
